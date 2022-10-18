@@ -1,0 +1,6 @@
+{
+  "watch": ["src"],
+  "ext": "ts, json",
+  "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts"],
+  "exec": "ts-node-dev --files --no-deps --respawn --poll --interval 1000 ./src/main.ts"
+}

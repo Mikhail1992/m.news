@@ -1,0 +1,73 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgres"
+  url      = env("DATABASE_URL")
+}
+
+// Define the `User` table in the database
+model User {
+  id        Int       @id @default(autoincrement())
+  name      String?
+  email     String    @unique
+  password  String
+  role      Role      @default(USER)
+  articles  Article[]
+  comments  Comment[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// Define the `Article` table in the database
+model Article {
+  id         Int       @id @default(autoincrement())
+  published  Boolean?  @default(false)
+  title      String    @unique
+  url        String    @unique
+  spoiler    String?
+  coverImage String?
+  picture    String?
+  content    String
+  views      Int?      @default(0)
+  user       User      @relation(fields: [userId], references: [id])
+  userId     Int
+  comments   Comment[]
+  category   Category  @relation(fields: [categoryId], references: [id])
+  categoryId Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+}
+
+// Define the `Comment` table in the database
+model Comment {
+  id        Int      @id @default(autoincrement())
+  text      String
+  published Boolean  @default(false)
+  article   Article  @relation(fields: [articleId], references: [id])
+  articleId Int
+  user      User     @relation(fields: [userId], references: [id])
+  userId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Define the `Category` table in the database
+model Category {
+  id        Int       @id @default(autoincrement())
+  title     String    @unique
+  url       String    @unique
+  articles  Article[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
