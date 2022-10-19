@@ -1,6 +1,8 @@
 import { PrismaClient, Prisma, Role } from '@prisma/client';
 
-import { generatePassword } from '../src/auth/auth.service';
+import { IAuthService } from '../src/auth/auth.service.interface';
+import { TYPES } from '../src/constants/constants';
+import { app, appContainer } from '../src/main';
 
 const prisma = new PrismaClient();
 
@@ -148,7 +150,9 @@ async function main() {
 
   for (const u of userData) {
     try {
-      const hashedPassword = await generatePassword(u.password);
+      const hashedPassword = await appContainer
+        .get<IAuthService>(TYPES.IAuthService)
+        .generatePassword(u.password);
       const user = await prisma.user.create({
         data: { ...u, password: hashedPassword },
       });
@@ -158,6 +162,7 @@ async function main() {
     }
   }
 
+  app.close();
   console.log(`Seeding finished.`);
 }
 
