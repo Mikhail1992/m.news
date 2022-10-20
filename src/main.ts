@@ -45,6 +45,7 @@ import { ConfigService } from './config/config.service';
 import { UploadClient } from './common/upload-client';
 import { IConfigService } from './config/config.service.interface';
 import { IUploadClient } from './common/upload-client.interface';
+import { SeedService } from './seed/seed.service';
 
 interface IBootstrap {
   appContainer: Container;
@@ -74,6 +75,7 @@ export const appBinging = new ContainerModule((bind: interfaces.Bind) => {
   bind<DatabaseService>(TYPES.DatabaseService).to(DatabaseService).inSingletonScope();
   bind<IConfigService>(TYPES.IConfigService).to(ConfigService).inSingletonScope();
   bind<IUploadClient>(TYPES.IUploadClient).to(UploadClient).inSingletonScope();
+  bind<SeedService>(TYPES.SeedService).to(SeedService).inSingletonScope();
   bind<App>(TYPES.Application).to(App);
 });
 

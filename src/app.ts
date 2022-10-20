@@ -21,6 +21,7 @@ import { ICommentController } from './comment/comment.controller.interface';
 import { IAuthController } from './auth/auth.controller.interface';
 import { IUserController } from './user/user.controller.interface';
 import { DatabaseService } from './database/database.service';
+import { SeedService } from './seed/seed.service';
 import { AuthMiddleware } from './common/auth.middleware';
 import { IConfigService } from './config/config.service.interface';
 
@@ -41,6 +42,7 @@ class App {
     @inject(TYPES.IExceptionFilter) private exceptionFilter: IExceptionFilter,
     @inject(TYPES.DatabaseService) private databaseService: DatabaseService,
     @inject(TYPES.IConfigService) private configService: IConfigService,
+    @inject(TYPES.SeedService) private seedService: SeedService,
   ) {
     this.app = express();
     this.port = PORT;
@@ -78,6 +80,7 @@ class App {
     this.useRoutes();
     this.useExceptionFilters();
     await this.databaseService.connect();
+    await this.seedService.fill();
     this.server = this.app.listen(this.port);
     this.loggerService.log(`Server works http://localhost:${this.port}`);
   }

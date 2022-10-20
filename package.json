@@ -14,9 +14,6 @@
     "generate": "prisma generate",
     "test": "jest"
   },
-  "prisma": {
-    "seed": "ts-node ./prisma/seed.ts"
-  },
   "keywords": [],
   "author": "",
   "license": "ISC",
