@@ -1,171 +1,76 @@
-import { PrismaClient, Prisma, Role } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
+import { Container, ContainerModule, inject, injectable, interfaces } from 'inversify';
+import 'reflect-metadata';
+import { IAuthService } from '../src/auth/auth.service.interface';
+import { ILogger } from '../src/common/logger/logger.interface';
+import { DatabaseService } from '../src/database/database.service';
+import { TYPES } from '../src/constants/constants';
+import { LoggerService } from '../src/common/logger/logger.service';
+import { AuthService } from '../src/auth/auth.service';
+import { IUserService } from '../src/user/user.service.interface';
+import { UserService } from '../src/user/user.service';
+import { IUserRepository } from '../src/user/user.repository.interface';
+import { UserRepository } from '../src/user/user.repository';
+import { IConfigService } from '../src/config/config.service.interface';
+import { ConfigService } from '../src/config/config.service';
+import { userData } from './data/user';
+import { categoryData } from './data/category';
 
-import { generatePassword } from '../src/auth/auth.service';
+@injectable()
+class Seed {
+  constructor(
+    @inject(TYPES.ILogger) private loggerService: ILogger,
+    @inject(TYPES.DatabaseService) private databaseService: DatabaseService,
+    @inject(TYPES.IAuthService) private authService: IAuthService,
+  ) {}
 
-const prisma = new PrismaClient();
+  public async uploadData() {
+    this.loggerService.log(`Start seeding ...`);
 
-const userData: Prisma.UserCreateInput[] = [
-  {
-    name: 'Admin',
-    email: 'admin@admin.com',
-    password: '11111111',
-    role: Role.ADMIN,
-    articles: {
-      create: [
-        {
-          published: true,
-          title: 'Title 3',
-          url: '3',
-          spoiler: 'Short description',
-          content: 'Long description',
-          coverImage: '',
-          picture: '',
-          category: {
-            connect: {
-              title: 'people',
-            },
-          },
-        },
-        {
-          published: false,
-          title: 'Title 4',
-          url: '4',
-          spoiler: 'Short description',
-          content: 'Long description',
-          coverImage: '',
-          picture: '',
-          category: {
-            connect: {
-              title: 'places',
-            },
-          },
-        },
-        {
-          published: false,
-          title: 'Title 5',
-          url: '5',
-          spoiler: 'Short description',
-          content: 'Long description',
-          coverImage: '',
-          picture: '',
-          category: {
-            connect: {
-              title: 'events',
-            },
-          },
-        },
-      ],
-    },
-  },
-  {
-    name: 'Manager',
-    email: 'manager@manager.com',
-    password: '11111111',
-    role: Role.MANAGER,
-    articles: {
-      create: [
-        {
-          published: true,
-          title: 'Title 1',
-          url: '1',
-          spoiler: 'Short description',
-          content: 'Long description',
-          coverImage: '',
-          picture: '',
-          category: {
-            connect: {
-              title: 'events',
-            },
-          },
-        },
-        {
-          published: true,
-          title: 'Title 2',
-          url: '2',
-          spoiler: 'Short description',
-          content: 'Long description',
-          coverImage: '',
-          picture: '',
-          category: {
-            connect: {
-              title: 'places',
-            },
-          },
-        },
-        {
-          published: false,
-          title: 'Title 6',
-          url: '6',
-          spoiler: 'Short description',
-          content: 'Long description',
-          coverImage: '',
-          picture: '',
-          category: {
-            connect: {
-              title: 'people',
-            },
-          },
-        },
-      ],
-    },
-  },
-  {
-    name: 'User',
-    email: 'user2@user.com',
-    password: '11111111',
-    role: Role.USER,
-  },
-];
-
-const categoryData: Prisma.CategoryCreateInput[] = [
-  {
-    title: 'people',
-    url: 'people',
-  },
-  {
-    title: 'events',
-    url: 'events',
-  },
-  {
-    title: 'places',
-    url: 'places',
-  },
-];
-
-async function main() {
-  console.log(`Start seeding ...`);
-
-  for (const c of categoryData) {
-    try {
-      const category = await prisma.category.create({
-        data: c,
-      });
-      console.log(`Created category with id: ${category.id}`);
-    } catch (e) {
-      console.log(`Category is already exists`);
+    for (const c of categoryData) {
+      try {
+        const category = await this.databaseService.client.category.create({
+          data: c,
+        });
+        this.loggerService.log(`Created category with id: ${category.id}`);
+      } catch (e) {
+        this.loggerService.log(`Category is already exists`);
+      }
     }
+
+    for (const u of userData) {
+      try {
+        const hashedPassword = await this.authService.generatePassword(u.password);
+        const user = await this.databaseService.client.user.create({
+          data: { ...u, password: hashedPassword },
+        });
+        this.loggerService.log(`Created user with id: ${user.id}`);
+      } catch (e) {
+        this.loggerService.log(`User is already exists`);
+      }
+    }
+
+    this.loggerService.log(`Seeding finished.`);
   }
 
-  for (const u of userData) {
-    try {
-      const hashedPassword = await generatePassword(u.password);
-      const user = await prisma.user.create({
-        data: { ...u, password: hashedPassword },
-      });
-      console.log(`Created user with id: ${user.id}`);
-    } catch (e) {
-      console.log(`User is already exists`);
-    }
+  public async init(): Promise<void> {
+    await this.uploadData();
+    this.databaseService.disconnect();
   }
-
-  console.log(`Seeding finished.`);
 }
+export { Seed };
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+export const seedBinging = new ContainerModule((bind: interfaces.Bind) => {
+  bind<ILogger>(TYPES.ILogger).to(LoggerService).inSingletonScope();
+  bind<IAuthService>(TYPES.IAuthService).to(AuthService).inSingletonScope();
+  bind<DatabaseService>(TYPES.DatabaseService).to(DatabaseService).inSingletonScope();
+  bind<IUserService>(TYPES.IUserService).to(UserService).inSingletonScope();
+  bind<IUserRepository>(TYPES.IUserRepository).to(UserRepository).inSingletonScope();
+  bind<IConfigService>(TYPES.IConfigService).to(ConfigService).inSingletonScope();
+  bind<Seed>(TYPES.ISeed).to(Seed);
+});
+
+const seedContainer = new Container();
+seedContainer.load(seedBinging);
+const seed = seedContainer.get<Seed>(TYPES.ISeed);
+seed.init();

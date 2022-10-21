@@ -24,6 +24,7 @@ const TYPES = {
   DatabaseService: Symbol.for('DatabaseService'),
   IConfigService: Symbol.for('ConfigService'),
   IUploadClient: Symbol.for('UploadClient'),
+  ISeed: Symbol.for('Seed'),
 };
 
 export { PORT, TYPES };
